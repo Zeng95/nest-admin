@@ -1,0 +1,23 @@
+version: '3.9'
+
+services:
+  backend:
+    build: .
+    ports:
+      - "8000:3000"
+    volumes:
+      - .:/app
+    depends_on:
+      - database
+
+  database:
+    image: mysql:5.7.36
+    restart: always
+    environment:
+      - MYSQL_DATABASE=admin
+      - MYSQL_PASSWORD=root
+      - MYSQL_ROOT_PASSWORD=root
+    volumes:
+      - mysql:/var/lib/mysql
+    ports:
+      - "33066:3306"
