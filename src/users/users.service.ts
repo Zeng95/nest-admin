@@ -13,4 +13,8 @@ export class UsersService {
   async findAll(): Promise<UserEntity[]> {
     return await this.usersRepository.find();
   }
+
+  async create(user: UserEntity): Promise<UserEntity> {
+    return await this.usersRepository.save(user);
+  }
 }
