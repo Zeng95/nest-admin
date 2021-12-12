@@ -10,11 +10,15 @@ export class UsersService {
     private readonly usersRepository: Repository<UserEntity>
   ) {}
 
+  async create(user: UserEntity): Promise<UserEntity> {
+    return await this.usersRepository.save(user);
+  }
+
   async findAll(): Promise<UserEntity[]> {
     return await this.usersRepository.find();
   }
 
-  async create(user: UserEntity): Promise<UserEntity> {
-    return await this.usersRepository.save(user);
+  async findOne(condition: { email: string }): Promise<UserEntity> {
+    return await this.usersRepository.findOne(condition);
   }
 }
