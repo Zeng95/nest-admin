@@ -14,11 +14,11 @@ export class UsersService {
     return await this.usersRepository.save(user);
   }
 
-  async findAll(): Promise<UserEntity[]> {
+  async findAll(): Promise<UserEntity[] | undefined> {
     return await this.usersRepository.find();
   }
 
-  async findOne(condition: { email: string }): Promise<UserEntity> {
-    return await this.usersRepository.findOne(condition);
+  async findOne(email: string): Promise<UserEntity | undefined> {
+    return await this.usersRepository.findOne(email);
   }
 }
