@@ -3,11 +3,19 @@ import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 import { Response } from 'express';
 import { UsersService } from '../users/users.service';
+import { CookieConfig } from './config';
 import { RegisterDto } from './models/register.dto';
 
 @Injectable()
 export class AuthService {
-  constructor(private usersService: UsersService, private jwtService: JwtService) {}
+  constructor(
+    private readonly usersService: UsersService,
+    private readonly jwtService: JwtService
+  ) {}
+
+  generateToken(payload): string {
+    return this.jwtService.sign(payload);
+  }
 
   async registerWithEmail(@Body() body: RegisterDto) {
     if (body.password !== body.passwordConfirmed) {
@@ -25,9 +33,30 @@ export class AuthService {
     });
   }
 
-  async loginWithEmail(@Body('email') email: string, @Body('password') password: string) {
+  async registerWithPhone(@Body() body: RegisterDto) {
+    if (body.password !== body.passwordConfirmed) {
+      throw new BadRequestException('Passwords do not match');
+    }
+
+    const saltOrRounds = 12;
+    const hash = await bcrypt.hash(body.password, saltOrRounds);
+
+    return this.usersService.create({
+      firstName: body.firstName,
+      lastName: body.lastName,
+      email: body.email,
+      password: hash
+    });
+  }
+
+  async loginWithEmailOrPhone(
+    @Body('email') email: string,
+    @Body('password') password: string,
+    @Res() response: Response
+  ) {
     const user = await this.usersService.findOne(email);
-    console.log(user);
+    const payload = { id: user.id };
+
     if (!user) {
       throw new NotFoundException('User not found');
     }
@@ -36,14 +65,14 @@ export class AuthService {
       throw new BadRequestException('Invalid credentials');
     }
 
-    return {
-      user,
-      access_token: this.jwtService.sign({ id: user.id })
-    };
+    const jwt = this.generateToken(payload);
+
+    response.cookie('jwt', jwt, CookieConfig());
+    response.status(200).send({ message: 'Login Success' });
   }
 
   async logout(@Res() response: Response) {
     response.clearCookie('jwt');
-    response.status(200).send({ message: 'Success' });
+    response.status(200).send({ message: 'Logout Success' });
   }
 }
