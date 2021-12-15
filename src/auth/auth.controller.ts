@@ -21,8 +21,8 @@ export class AuthController {
 
   @Post('auth/login')
   @HttpCode(200)
-  async loginWithEmailOrPhone(@Body() body: Body, @Req() request: RegisterDto) {
-    return this.authService.loginWithEmailOrPhone(request.email, request.password);
+  async loginWithEmailOrPhone(@Req() request: RegisterDto, @Res() response: Response) {
+    return this.authService.loginWithEmailOrPhone(request.email, request.password, response);
   }
 
   @Post('auth/forgot')

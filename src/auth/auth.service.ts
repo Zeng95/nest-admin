@@ -68,11 +68,11 @@ export class AuthService {
     const jwt = this.generateToken(payload);
 
     response.cookie('jwt', jwt, CookieConfig());
-    response.status(200).send({ message: 'Login Success' });
+    response.status(200).send({ message: 'Login successfully' });
   }
 
   async logout(@Res() response: Response) {
     response.clearCookie('jwt');
-    response.status(200).send({ message: 'Logout Success' });
+    response.status(200).send({ message: 'Logout successfully' });
   }
 }
