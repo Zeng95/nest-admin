@@ -3,8 +3,7 @@ import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 import { Response } from 'express';
 import { UsersService } from '../users/users.service';
-import { CookieConfig } from './config';
-import { RegisterDto } from './models/register.dto';
+import { EmailRegistrationDTO, PhoneRegistrationDTO } from './models/registration.dto';
 
 @Injectable()
 export class AuthService {
@@ -13,47 +12,65 @@ export class AuthService {
     private readonly jwtService: JwtService
   ) {}
 
-  generateToken(payload): string {
+  generateToken(payload: { id: string }): string {
     return this.jwtService.sign(payload);
   }
 
-  async registerWithEmail(@Body() body: RegisterDto) {
-    if (body.password !== body.passwordConfirmed) {
-      throw new BadRequestException('Passwords do not match');
+  async validateUser(pass: string, phone?: string, email?: string) {
+    let user;
+
+    if (phone) {
+      user = await this.usersService.findOneWithPhone(phone);
+    } else {
+      user = await this.usersService.findOneWithEmail(email);
     }
 
-    const saltOrRounds = 12;
-    const hash = await bcrypt.hash(body.password, saltOrRounds);
-
-    return this.usersService.create({
-      firstName: body.firstName,
-      lastName: body.lastName,
-      email: body.email,
-      password: hash
-    });
-  }
-
-  async registerWithPhone(@Body() body: RegisterDto) {
-    if (body.password !== body.passwordConfirmed) {
-      throw new BadRequestException('Passwords do not match');
+    if (user && user.password === pass) {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { password, ...result } = user;
+      return result;
     }
 
-    const saltOrRounds = 12;
-    const hash = await bcrypt.hash(body.password, saltOrRounds);
-
-    return this.usersService.create({
-      firstName: body.firstName,
-      lastName: body.lastName,
-      email: body.email,
-      password: hash
-    });
+    return null;
   }
 
-  async loginWithEmailOrPhone(
-    @Body('email') email: string,
-    @Body('password') password: string,
-    @Res() response: Response
-  ) {
+  async registerWithPhone(@Body() body: PhoneRegistrationDTO) {
+    try {
+      const { password, passwordConfirmed, firstName, lastName, phone, countryCode } = body;
+
+      if (password !== passwordConfirmed) {
+        throw new BadRequestException('Passwords do not match');
+      }
+
+      const saltOrRounds = 12;
+      const hash = await bcrypt.hash(password, saltOrRounds);
+      const payload = { firstName, lastName, phone, countryCode, password: hash };
+
+      return this.usersService.create(payload);
+    } catch (e) {
+      console.error('registerWithPhone:', e);
+    }
+  }
+
+  async registerWithEmail(@Body() body: EmailRegistrationDTO) {
+    try {
+      const { password, passwordConfirmed, firstName, lastName, email } = body;
+
+      if (password !== passwordConfirmed) {
+        throw new BadRequestException('Passwords do not match');
+      }
+
+      const saltOrRounds = 12;
+      const hash = await bcrypt.hash(password, saltOrRounds);
+      const payload = { firstName, lastName, email, password: hash };
+
+      return this.usersService.create(payload);
+    } catch (e) {
+      console.error('registerWithEmail:', e);
+    }
+  }
+
+  async loginWithEmailOrPhone() {
     const user = await this.usersService.findOne(email);
     const payload = { id: user.id };
 
@@ -67,8 +84,7 @@ export class AuthService {
 
     const jwt = this.generateToken(payload);
 
-    response.cookie('jwt', jwt, CookieConfig());
-    response.status(200).send({ message: 'Login successfully' });
+    return jwt;
   }
 
   async logout(@Res() response: Response) {

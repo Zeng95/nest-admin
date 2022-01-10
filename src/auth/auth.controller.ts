@@ -1,7 +1,7 @@
-import { Body, Controller, Get, HttpCode, Post, Req, Res } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Post, Res } from '@nestjs/common';
 import { Response } from 'express';
 import { AuthService } from './auth.service';
-import { RegisterDto } from './models/register.dto';
+import { EmailRegistrationDTO, PhoneRegistrationDTO } from './models/registration.dto';
 
 @Controller()
 export class AuthController {
@@ -9,25 +9,35 @@ export class AuthController {
 
   @Post('auth/register/phone')
   @HttpCode(200)
-  async registerWithPhone(@Req() request: RegisterDto) {
-    return this.authService.registerWithPhone(request);
+  async registerWithPhone(@Body() body: PhoneRegistrationDTO, @Res() response: Response) {
+    try {
+      const user = await this.authService.registerWithPhone(body);
+      response.json(user);
+    } catch (e) {
+      response.status(422).send(e);
+    }
   }
 
   @Post('auth/register/email')
   @HttpCode(200)
-  async registerWithEmail(@Req() request: RegisterDto) {
-    return this.authService.registerWithEmail(request);
+  async registerWithEmail(@Body() body: EmailRegistrationDTO, @Res() response: Response) {
+    try {
+      const user = await this.authService.registerWithEmail(body);
+      response.json(user);
+    } catch (e) {
+      response.status(422).send(e);
+    }
   }
 
   @Post('auth/login')
   @HttpCode(200)
-  async loginWithEmailOrPhone(@Req() request: RegisterDto, @Res() response: Response) {
-    return this.authService.loginWithEmailOrPhone(request.email, request.password, response);
+  async loginWithEmailOrPhone(@Body() body: EmailRegistrationDTO) {
+    return this.authService.loginWithEmailOrPhone(body);
   }
 
   @Post('auth/forgot')
   @HttpCode(200)
-  async emailOrPhoneForgot(@Body('username') body: string, @Res() response: Response) {
+  async forgotEmailOrPhone(@Body('username') body: string, @Res() response: Response) {
     console.log(body, response);
   }
 
