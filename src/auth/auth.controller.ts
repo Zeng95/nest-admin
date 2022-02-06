@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpCode, Post, Request, Res, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Post, Req, Res, UseGuards } from '@nestjs/common';
 import { Response } from 'express';
 import { AuthService } from './auth.service';
 import { LocalAuthGuard } from './guards/local-auth.guard';
@@ -26,17 +26,21 @@ export class AuthController {
     response.json(user);
   }
 
-  @UseGuards(LocalAuthGuard)
-  @Post('login')
-  @HttpCode(200)
-  async loginWithEmailOrPhone(@Request() req, @Body() body: Body) {
-    console.log(req, body);
-  }
-
   @Post('forgot')
   @HttpCode(200)
   async forgotEmailOrPhone(@Body('username') body: string, @Res() response: Response) {
     console.log(body, response);
+  }
+
+  @UseGuards(LocalAuthGuard)
+  @Post('login')
+  @HttpCode(200)
+  async loginWithEmailOrPhone(@Req() req, @Body() body: Body) {
+    if (body['remember_me']) {
+      console.log(body);
+    }
+
+    return req.user;
   }
 
   @Get('logout')

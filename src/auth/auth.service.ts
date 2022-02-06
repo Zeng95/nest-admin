@@ -1,7 +1,16 @@
-import { BadRequestException, Body, ConflictException, Injectable, Res } from '@nestjs/common';
+import {
+  BadRequestException,
+  Body,
+  ConflictException,
+  Injectable,
+  NotFoundException,
+  Res,
+  UnauthorizedException,
+  UnprocessableEntityException
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
-import { isEmail, isNumberString } from 'class-validator';
+import { isEmail, isPhoneNumber } from 'class-validator';
 import { Response } from 'express';
 import { UsersService } from '../users/users.service';
 import { EmailRegistrationDTO, PhoneRegistrationDTO } from './models/registration.dto';
@@ -18,47 +27,47 @@ export class AuthService {
   }
 
   async validateUserEmail(email: string, pass: string) {
-    try {
-      const user = await this.usersService.findOneWithEmail(email);
+    const result = await this.usersService.findOneWithEmail(email);
 
-      if (user && user.password === pass) {
-        const { password, ...result } = user;
-        return result;
-      }
-
-      return null;
-    } catch (error) {
-      throw new Error(error);
+    if (!result) {
+      throw new NotFoundException('User not found');
     }
+
+    if (result && !(await bcrypt.compare(pass, result.password))) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+
+    // Removie Object Properties with Destructuring
+    const { password, ...user } = result;
+    return user;
   }
 
   async validateUserPhone(phone: string, pass: string) {
-    try {
-      const user = await this.usersService.findOneWithPhone(phone);
+    const result = await this.usersService.findOneWithPhone(phone);
 
-      if (user && user.password === pass) {
-        const { password, ...result } = user;
-        return result;
-      }
-
-      return null;
-    } catch (error) {
-      throw new Error(error);
+    if (!result) {
+      throw new NotFoundException('User not found');
     }
+
+    if (result && !(await bcrypt.compare(pass, result.password))) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+
+    // Removie Object Properties with Destructuring
+    const { password, ...user } = result;
+    return user;
   }
 
   async validateUserEmailOrPhone(username: string, pass: string) {
-    try {
-      if (isEmail(username)) {
-        return await this.validateUserEmail(username.toLowerCase(), pass);
-      } else if (isNumberString(username)) {
-        return await this.validateUserPhone(username, pass);
-      }
-
-      throw Error('Invalid username type');
-    } catch (error) {
-      throw Error(error);
+    if (isEmail(username)) {
+      return await this.validateUserEmail(username.toLowerCase(), pass);
     }
+
+    if (isPhoneNumber(username)) {
+      return await this.validateUserPhone(username, pass);
+    }
+
+    throw new UnprocessableEntityException('Invalid username type');
   }
 
   async registerWithPhone(@Body() body: PhoneRegistrationDTO) {
