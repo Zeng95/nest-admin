@@ -4,6 +4,7 @@ import { UsersModule } from 'src/users/users.module';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { jwtConstants } from './constants';
+import { LocalStrategy } from './strategies/local.strategy';
 
 @Module({
   imports: [
@@ -14,7 +15,7 @@ import { jwtConstants } from './constants';
     })
   ],
   controllers: [AuthController],
-  providers: [AuthService],
+  providers: [AuthService, LocalStrategy],
   exports: [AuthService]
 })
 export class AuthModule {}

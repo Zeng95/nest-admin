@@ -1,6 +1,7 @@
-import { BadRequestException, Body, Injectable, NotFoundException, Res } from '@nestjs/common';
+import { BadRequestException, Body, ConflictException, Injectable, Res } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
+import { isEmail, isNumberString } from 'class-validator';
 import { Response } from 'express';
 import { UsersService } from '../users/users.service';
 import { EmailRegistrationDTO, PhoneRegistrationDTO } from './models/registration.dto';
@@ -16,75 +17,90 @@ export class AuthService {
     return this.jwtService.sign(payload);
   }
 
-  async validateUser(pass: string, phone?: string, email?: string) {
-    let user;
+  async validateUserEmail(email: string, pass: string) {
+    try {
+      const user = await this.usersService.findOneWithEmail(email);
 
-    if (phone) {
-      user = await this.usersService.findOneWithPhone(phone);
-    } else {
-      user = await this.usersService.findOneWithEmail(email);
+      if (user && user.password === pass) {
+        const { password, ...result } = user;
+        return result;
+      }
+
+      return null;
+    } catch (error) {
+      throw new Error(error);
     }
+  }
 
-    if (user && user.password === pass) {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { password, ...result } = user;
-      return result;
+  async validateUserPhone(phone: string, pass: string) {
+    try {
+      const user = await this.usersService.findOneWithPhone(phone);
+
+      if (user && user.password === pass) {
+        const { password, ...result } = user;
+        return result;
+      }
+
+      return null;
+    } catch (error) {
+      throw new Error(error);
     }
+  }
 
-    return null;
+  async validateUserEmailOrPhone(username: string, pass: string) {
+    try {
+      if (isEmail(username)) {
+        return await this.validateUserEmail(username.toLowerCase(), pass);
+      } else if (isNumberString(username)) {
+        return await this.validateUserPhone(username, pass);
+      }
+
+      throw Error('Invalid username type');
+    } catch (error) {
+      throw Error(error);
+    }
   }
 
   async registerWithPhone(@Body() body: PhoneRegistrationDTO) {
-    try {
-      const { password, passwordConfirmed, firstName, lastName, phone, countryCode } = body;
+    const { password, passwordConfirmed, firstName, lastName, phone, countryCode } = body;
 
-      if (password !== passwordConfirmed) {
-        throw new BadRequestException('Passwords do not match');
-      }
-
-      const saltOrRounds = 12;
-      const hash = await bcrypt.hash(password, saltOrRounds);
-      const payload = { firstName, lastName, phone, countryCode, password: hash };
-
-      return this.usersService.create(payload);
-    } catch (e) {
-      console.error('registerWithPhone:', e);
+    if (password !== passwordConfirmed) {
+      throw new BadRequestException('Passwords do not match');
     }
+
+    const isPhoneExisting = await this.usersService.findOneWithPhone(phone);
+
+    if (isPhoneExisting) {
+      throw new ConflictException('This phone number is already in use');
+    }
+
+    // Generate a salt and hash on separate function calls
+    const salt = await bcrypt.genSalt(12);
+    const hash = await bcrypt.hash(password, salt);
+    const payload = { firstName, lastName, phone, countryCode, password: hash };
+
+    return this.usersService.create(payload);
   }
 
   async registerWithEmail(@Body() body: EmailRegistrationDTO) {
-    try {
-      const { password, passwordConfirmed, firstName, lastName, email } = body;
+    const { password, passwordConfirmed, firstName, lastName, email } = body;
 
-      if (password !== passwordConfirmed) {
-        throw new BadRequestException('Passwords do not match');
-      }
-
-      const saltOrRounds = 12;
-      const hash = await bcrypt.hash(password, saltOrRounds);
-      const payload = { firstName, lastName, email, password: hash };
-
-      return this.usersService.create(payload);
-    } catch (e) {
-      console.error('registerWithEmail:', e);
-    }
-  }
-
-  async loginWithEmailOrPhone() {
-    const user = await this.usersService.findOne(email);
-    const payload = { id: user.id };
-
-    if (!user) {
-      throw new NotFoundException('User not found');
+    if (password !== passwordConfirmed) {
+      throw new BadRequestException('Passwords do not match');
     }
 
-    if (!bcrypt.compareSync(password, user.password)) {
-      throw new BadRequestException('Invalid credentials');
+    const isEmailExisting = await this.usersService.findOneWithEmail(email);
+
+    if (isEmailExisting) {
+      throw new ConflictException('This email is already in use');
     }
 
-    const jwt = this.generateToken(payload);
+    // Generate a salt and hash on separate function calls
+    const salt = await bcrypt.genSalt(12);
+    const hash = await bcrypt.hash(password, salt);
+    const payload = { firstName, lastName, email, password: hash };
 
-    return jwt;
+    return this.usersService.create(payload);
   }
 
   async logout(@Res() response: Response) {

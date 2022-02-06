@@ -1,47 +1,45 @@
-import { Body, Controller, Get, HttpCode, Post, Res } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Post, Request, Res, UseGuards } from '@nestjs/common';
 import { Response } from 'express';
 import { AuthService } from './auth.service';
+import { LocalAuthGuard } from './guards/local-auth.guard';
 import { EmailRegistrationDTO, PhoneRegistrationDTO } from './models/registration.dto';
 
-@Controller()
+@Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
-  @Post('auth/register/phone')
+  @Post('register/phone')
   @HttpCode(200)
   async registerWithPhone(@Body() body: PhoneRegistrationDTO, @Res() response: Response) {
-    try {
-      const user = await this.authService.registerWithPhone(body);
-      response.json(user);
-    } catch (e) {
-      response.status(422).send(e);
-    }
+    const result = await this.authService.registerWithPhone(body);
+    // Removie Object Properties with Destructuring
+    const { password, ...user } = result;
+    response.json(user);
   }
 
-  @Post('auth/register/email')
+  @Post('register/email')
   @HttpCode(200)
   async registerWithEmail(@Body() body: EmailRegistrationDTO, @Res() response: Response) {
-    try {
-      const user = await this.authService.registerWithEmail(body);
-      response.json(user);
-    } catch (e) {
-      response.status(422).send(e);
-    }
+    const result = await this.authService.registerWithEmail(body);
+    // Removie Object Properties with Destructuring
+    const { password, ...user } = result;
+    response.json(user);
   }
 
-  @Post('auth/login')
+  @UseGuards(LocalAuthGuard)
+  @Post('login')
   @HttpCode(200)
-  async loginWithEmailOrPhone(@Body() body: EmailRegistrationDTO) {
-    return this.authService.loginWithEmailOrPhone(body);
+  async loginWithEmailOrPhone(@Request() req, @Body() body: Body) {
+    console.log(req, body);
   }
 
-  @Post('auth/forgot')
+  @Post('forgot')
   @HttpCode(200)
   async forgotEmailOrPhone(@Body('username') body: string, @Res() response: Response) {
     console.log(body, response);
   }
 
-  @Get('auth/logout')
+  @Get('logout')
   @HttpCode(200)
   async logout(@Res() response: Response) {
     this.authService.logout(response);

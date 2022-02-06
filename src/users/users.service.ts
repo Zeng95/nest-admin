@@ -19,10 +19,10 @@ export class UsersService {
   }
 
   findOneWithEmail(email: string): Promise<User | undefined> {
-    return this.usersRepository.findOne(email);
+    return this.usersRepository.findOne({ where: { email } });
   }
 
   findOneWithPhone(phone: string): Promise<User | undefined> {
-    return this.usersRepository.findOne(phone);
+    return this.usersRepository.findOne({ where: { phone } });
   }
 }
