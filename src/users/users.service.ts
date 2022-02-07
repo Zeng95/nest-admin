@@ -18,6 +18,10 @@ export class UsersService {
     return this.usersRepository.find();
   }
 
+  findOneWithId(id: string): Promise<User | undefined> {
+    return this.usersRepository.findOne(id);
+  }
+
   findOneWithEmail(email: string): Promise<User | undefined> {
     return this.usersRepository.findOne({ where: { email } });
   }

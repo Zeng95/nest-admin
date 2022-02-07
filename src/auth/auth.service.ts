@@ -12,6 +12,7 @@ import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 import { isEmail, isPhoneNumber } from 'class-validator';
 import { Response } from 'express';
+import { User } from 'src/users/models/user.entity';
 import { UsersService } from '../users/users.service';
 import { EmailRegistrationDTO, PhoneRegistrationDTO } from './models/registration.dto';
 
@@ -22,7 +23,7 @@ export class AuthService {
     private readonly jwtService: JwtService
   ) {}
 
-  generateToken(payload: { id: string }): string {
+  generateToken(payload: { sub: string; name: string }): string {
     return this.jwtService.sign(payload);
   }
 
@@ -37,7 +38,7 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    // Removie Object Properties with Destructuring
+    // * Removie Object Properties with Destructuring
     const { password, ...user } = result;
     return user;
   }
@@ -53,7 +54,7 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    // Removie Object Properties with Destructuring
+    // * Removie Object Properties with Destructuring
     const { password, ...user } = result;
     return user;
   }
@@ -83,7 +84,7 @@ export class AuthService {
       throw new ConflictException('This phone number is already in use');
     }
 
-    // Generate a salt and hash on separate function calls
+    // * Generate a salt and hash on separate function calls
     const salt = await bcrypt.genSalt(12);
     const hash = await bcrypt.hash(password, salt);
     const payload = { firstName, lastName, phone, countryCode, password: hash };
@@ -104,12 +105,28 @@ export class AuthService {
       throw new ConflictException('This email is already in use');
     }
 
-    // Generate a salt and hash on separate function calls
+    // * Generate a salt and hash on separate function calls
     const salt = await bcrypt.genSalt(12);
     const hash = await bcrypt.hash(password, salt);
     const payload = { firstName, lastName, email, password: hash };
 
     return this.usersService.create(payload);
+  }
+
+  login(user: User) {
+    // * {
+    // *   "sub": "1234567890",
+    // *   "name": "John Doe",
+    // *   "admin": true
+    // * }
+    // * Generate our JWT token from a subset of the user object properties
+    // * We choose a property name of sub to hold our userId value to be consistent with JWT standards
+    const payload = {
+      sub: user.id,
+      name: `${user.firstName} ${user.lastName}`
+    };
+
+    return this.generateToken(payload);
   }
 
   async logout(@Res() response: Response) {
