@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { Strategy } from 'passport-jwt';
 import { jwtConstants } from '../constants';
@@ -7,8 +7,10 @@ import { jwtConstants } from '../constants';
 export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor() {
     super({
-      jwtFromRequest: (request) => {
-        if (!request || !request.cookies) return null;
+      jwtFromRequest: (request: any) => {
+        if (!request || !request.cookies['access_token']) {
+          throw new UnauthorizedException('Miss an HTTP cookie');
+        }
         return request.cookies['access_token'];
       },
       ignoreExpiration: false,

@@ -1,5 +1,4 @@
 import { Controller, Get, HttpCode, NotFoundException, Param, UseGuards } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { ReqUser } from 'src/shared/user.decorator';
 import { User } from './models/user.entity';
@@ -7,10 +6,7 @@ import { UsersService } from './users.service';
 
 @Controller('users')
 export class UsersController {
-  constructor(
-    private readonly usersService: UsersService,
-    private readonly jwtService: JwtService
-  ) {}
+  constructor(private readonly usersService: UsersService) {}
 
   @Get()
   async findAll(): Promise<User[]> {
