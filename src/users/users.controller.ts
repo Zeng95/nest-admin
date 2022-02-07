@@ -1,4 +1,13 @@
-import { Controller, Get, HttpCode, NotFoundException, Param, UseGuards } from '@nestjs/common';
+import {
+  ClassSerializerInterceptor,
+  Controller,
+  Get,
+  HttpCode,
+  NotFoundException,
+  Param,
+  UseGuards,
+  UseInterceptors
+} from '@nestjs/common';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { ReqUser } from 'src/shared/user.decorator';
 import { User } from './models/user.entity';
@@ -14,6 +23,7 @@ export class UsersController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @UseInterceptors(ClassSerializerInterceptor)
   @Get(':id')
   @HttpCode(200)
   async getUser(@Param('id') id: string, @ReqUser() user: any) {
@@ -22,8 +32,6 @@ export class UsersController {
     }
 
     const result = await this.usersService.findOneWithId(user.id);
-    // * Removie Object Properties with Destructuring
-    const { password, ...newUser } = result;
-    return newUser;
+    return result;
   }
 }
