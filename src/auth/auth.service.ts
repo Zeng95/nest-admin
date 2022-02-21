@@ -4,14 +4,12 @@ import {
   ConflictException,
   Injectable,
   NotFoundException,
-  Res,
   UnauthorizedException,
   UnprocessableEntityException
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 import { isEmail, isPhoneNumber } from 'class-validator';
-import { Response } from 'express';
 import { User } from 'src/users/models/user.entity';
 import { UsersService } from '../users/users.service';
 import { EmailRegistrationDTO, PhoneRegistrationDTO } from './models/registration.dto';
@@ -127,10 +125,5 @@ export class AuthService {
     };
 
     return this.generateToken(payload);
-  }
-
-  async logout(@Res() response: Response) {
-    response.clearCookie('jwt');
-    response.status(200).send({ message: 'Logout successfully' });
   }
 }

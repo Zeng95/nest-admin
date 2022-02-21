@@ -3,6 +3,7 @@ import { Response } from 'express';
 import { ReqUser } from 'src/shared/user.decorator';
 import { User } from 'src/users/models/user.entity';
 import { AuthService } from './auth.service';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { LocalAuthGuard } from './guards/local-auth.guard';
 import { EmailRegistrationDTO, PhoneRegistrationDTO } from './models/registration.dto';
 
@@ -41,7 +42,9 @@ export class AuthController {
       console.log(body);
     }
     // * Attach a cookie to an outgoing response is mores secure
-    response.cookie('access_token', access_token, { httpOnly: true }).send({ success: true });
+    response
+      .cookie('access_token', access_token, { httpOnly: true })
+      .send({ message: 'Login successfully' });
   }
 
   @Post('forgot')
@@ -50,9 +53,11 @@ export class AuthController {
     console.log(body, response);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Get('logout')
   @HttpCode(200)
   async logout(@Res() response: Response) {
-    this.authService.logout(response);
+    response.clearCookie('access_token');
+    response.send({ message: 'Logout successfully' });
   }
 }

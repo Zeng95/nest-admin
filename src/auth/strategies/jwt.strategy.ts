@@ -9,7 +9,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     super({
       jwtFromRequest: (request: any) => {
         if (!request || !request.cookies['access_token']) {
-          throw new UnauthorizedException('Miss an HTTP cookie');
+          throw new UnauthorizedException();
         }
         return request.cookies['access_token'];
       },
