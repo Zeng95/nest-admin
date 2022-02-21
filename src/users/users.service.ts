@@ -29,4 +29,12 @@ export class UsersService {
   findOneWithPhone(phone: string): Promise<User | undefined> {
     return this.usersRepository.findOne({ where: { phone } });
   }
+
+  update(id: string, data) {
+    return this.usersRepository.update(id, data);
+  }
+
+  delete(id: string) {
+    return this.usersRepository.delete(id);
+  }
 }
